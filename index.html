@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <meta name="theme-color" content="#060C18"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="AI.Watch"/>
+  <meta name="description" content="Veille nouveautés IA : Claude, ChatGPT, Gemini"/>
+  <title>AI.Watch</title>
+
+  <!-- PWA Manifest généré dynamiquement -->
+  <script>
+    (function() {
+      var svgIcon = "data:image/svg+xml," + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192"><rect width="192" height="192" rx="40" fill="#060C18"/><text x="96" y="136" font-size="96" text-anchor="middle" font-family="monospace" fill="#3B82F6">W</text></svg>');
+      var manifest = {
+        name: "AI.Watch — Veille IA",
+        short_name: "AI.Watch",
+        description: "Veille nouveautés Claude, ChatGPT & Gemini",
+        start_url: "./",
+        display: "standalone",
+        background_color: "#060C18",
+        theme_color: "#060C18",
+        orientation: "portrait-primary",
+        icons: [
+          { src: svgIcon, sizes: "192x192", type: "image/svg+xml" },
+          { src: svgIcon, sizes: "512x512", type: "image/svg+xml" }
+        ]
+      };
+      var blob = new Blob([JSON.stringify(manifest)], { type: "application/manifest+json" });
+      var link = document.createElement("link");
+      link.rel = "manifest";
+      link.href = URL.createObjectURL(blob);
+      document.head.appendChild(link);
+    })();
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@700;800&display=swap" rel="stylesheet"/>
+
+  <style>
+    :root {
+      --bg: #060C18;
+      --surface: #0D1526;
+      --surface2: #131F38;
+      --border: rgba(255,255,255,0.07);
+      --text: #E2E8F0;
+      --muted: #475569;
+      --dim: #1E293B;
+      --blue: #3B82F6;
+      --amber: #D97706;
+      --green: #10B981;
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 20px);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Space Mono', 'Courier New', monospace;
+      overflow-x: hidden;
+    }
+
+    body { padding-top: var(--safe-top); }
+
+    /* ─── HEADER ─── */
+    .header {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(6,12,24,0.97);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 16px 10px;
+    }
+    .header-row {
+      display: flex; align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .logo {
+      font-family: 'Syne', sans-serif;
+      font-size: 22px; font-weight: 800;
+      letter-spacing: -0.03em; color: #F1F5F9;
+    }
+    .logo b { color: var(--blue); font-weight: 800; }
+    .logo-sub {
+      font-size: 9px; color: var(--muted);
+      letter-spacing: 0.18em; margin-top: 2px;
+    }
+
+    /* ─── BOUTON ACTUALISER ─── */
+    .btn-refresh {
+      display: flex; align-items: center; gap: 7px;
+      background: rgba(59,130,246,0.12);
+      border: 1px solid rgba(59,130,246,0.4);
+      border-radius: 10px;
+      color: #93C5FD;
+      padding: 9px 14px;
+      font-family: 'Space Mono', monospace;
+      font-size: 11px; font-weight: 700;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      -webkit-appearance: none;
+      touch-action: manipulation;
+    }
+    .btn-refresh:active { transform: scale(0.95); background: rgba(59,130,246,0.22); }
+    .btn-refresh:disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
+
+    /* ─── TABS ─── */
+    .tabs {
+      display: flex; gap: 6px;
+      overflow-x: auto; scrollbar-width: none;
+    }
+    .tabs::-webkit-scrollbar { display: none; }
+    .tab {
+      flex-shrink: 0;
+      padding: 6px 13px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-family: 'Space Mono', monospace;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      transition: all 0.18s;
+      touch-action: manipulation;
+    }
+    .tab.active  { color: var(--text); border-color: rgba(255,255,255,0.22); background: rgba(255,255,255,0.06); }
+    .tab[data-id="claude"].active  { border-color:rgba(217,119,6,.5);  color:#FCD34D; background:rgba(217,119,6,.1);  }
+    .tab[data-id="chatgpt"].active { border-color:rgba(16,185,129,.5); color:#6EE7B7; background:rgba(16,185,129,.1); }
+    .tab[data-id="gemini"].active  { border-color:rgba(59,130,246,.5); color:#93C5FD; background:rgba(59,130,246,.1); }
+
+    /* ─── CONTENU ─── */
+    .content {
+      padding: 16px;
+      padding-bottom: calc(var(--safe-bottom) + 16px);
+      min-height: calc(100dvh - 110px);
+    }
+
+    /* ─── EMPTY STATE ─── */
+    .empty-state {
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 72px 24px; text-align: center; gap: 14px;
+    }
+    .empty-icons { font-size: 38px; opacity: 0.18; letter-spacing: 14px; }
+    .empty-title { font-size: 14px; color: #334155; font-family: 'Syne', sans-serif; font-weight: 700; }
+    .empty-sub   { font-size: 11px; color: #1E293B; line-height: 1.7; }
+
+    /* ─── API KEY PROMPT ─── */
+    .apikey-box {
+      background: var(--surface);
+      border: 1px solid rgba(59,130,246,0.25);
+      border-radius: 14px;
+      padding: 18px;
+      margin-bottom: 16px;
+    }
+    .apikey-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 13px; font-weight: 800;
+      color: #93C5FD; margin-bottom: 6px;
+    }
+    .apikey-desc {
+      font-size: 10px; color: var(--muted);
+      line-height: 1.6; margin-bottom: 12px;
+    }
+    .apikey-input {
+      width: 100%;
+      background: rgba(0,0,0,0.3);
+      border: 1px solid rgba(59,130,246,0.3);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      padding: 10px 12px;
+      outline: none;
+      margin-bottom: 10px;
+      -webkit-appearance: none;
+    }
+    .apikey-input:focus { border-color: rgba(59,130,246,0.6); }
+    .apikey-input::placeholder { color: #334155; }
+    .apikey-save {
+      width: 100%;
+      background: rgba(59,130,246,0.18);
+      border: 1px solid rgba(59,130,246,0.4);
+      border-radius: 8px;
+      color: #93C5FD;
+      font-family: 'Space Mono', monospace;
+      font-size: 11px; font-weight: 700;
+      padding: 10px;
+      cursor: pointer;
+      letter-spacing: 0.06em;
+      touch-action: manipulation;
+    }
+    .apikey-link {
+      display: block; text-align: center;
+      font-size: 10px; color: var(--muted);
+      margin-top: 8px; text-decoration: none;
+    }
+    .apikey-change {
+      font-size: 10px; color: var(--muted);
+      background: none; border: none;
+      cursor: pointer; font-family: inherit;
+      text-decoration: underline; padding: 0;
+    }
+
+    /* ─── STATUS ─── */
+    .status-bar {
+      background: rgba(59,130,246,0.07);
+      border: 1px solid rgba(59,130,246,0.18);
+      border-radius: 8px; padding: 8px 12px;
+      font-size: 10px; color: #60A5FA;
+      letter-spacing: 0.06em;
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 14px;
+    }
+    .error-bar {
+      background: rgba(239,68,68,0.07);
+      border: 1px solid rgba(239,68,68,0.2);
+      border-radius: 8px; padding: 10px 12px;
+      font-size: 11px; color: #FCA5A5;
+      line-height: 1.5; margin-bottom: 14px;
+    }
+
+    /* ─── SOURCE HEADER ─── */
+    .src-header {
+      display: flex; align-items: center; gap: 10px;
+      padding: 11px 13px; margin-bottom: 12px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+    .src-icon {
+      width: 34px; height: 34px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; flex-shrink: 0;
+    }
+    .src-name { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 800; }
+    .src-link  { font-size: 10px; color: var(--muted); text-decoration: none; }
+
+    /* ─── NEWS CARD ─── */
+    .card {
+      display: block;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 10px;
+      text-decoration: none;
+      animation: fadeUp 0.3s ease both;
+    }
+    .card:active { background: var(--surface2); }
+    .card-title {
+      font-size: 13px; font-weight: 700;
+      color: var(--text); line-height: 1.45;
+      margin-bottom: 7px;
+      font-family: 'Syne', sans-serif;
+    }
+    .card-meta {
+      display: flex; align-items: center; gap: 7px;
+      font-size: 10px; color: var(--muted);
+      margin-bottom: 7px;
+    }
+    .card-summary { font-size: 11px; color: #64748B; line-height: 1.55; }
+    .card-arrow   { text-align: right; font-size: 10px; color: var(--dim); margin-top: 8px; }
+
+    /* ─── SKELETON ─── */
+    .skel {
+      background: linear-gradient(90deg, var(--surface) 25%, var(--surface2) 50%, var(--surface) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s infinite;
+      border-radius: 10px; margin-bottom: 10px;
+    }
+
+    /* ─── SECTION LABEL ─── */
+    .section-label {
+      font-size: 9px; color: var(--muted);
+      letter-spacing: 0.14em; margin-bottom: 10px;
+      padding-left: 2px;
+    }
+
+    /* ─── LIENS TAB ─── */
+    .link-card {
+      display: flex; align-items: center;
+      justify-content: space-between;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 13px 14px;
+      margin-bottom: 8px;
+      text-decoration: none;
+    }
+    .link-card:active { background: var(--surface2); }
+    .link-card-label { font-size: 12px; color: var(--text); }
+    .link-card-arrow { font-size: 11px; color: var(--muted); }
+
+    /* ─── INSTALL BANNER ─── */
+    .install-banner {
+      display: none;
+      background: linear-gradient(135deg, rgba(59,130,246,0.12), rgba(16,185,129,0.08));
+      border: 1px solid rgba(59,130,246,0.28);
+      border-radius: 12px; padding: 12px 14px;
+      margin-bottom: 14px;
+      align-items: center; gap: 10px;
+    }
+    .install-banner.show { display: flex; }
+    .install-text { flex: 1; font-size: 11px; color: #93C5FD; line-height: 1.45; }
+    .btn-install {
+      background: rgba(59,130,246,0.18);
+      border: 1px solid rgba(59,130,246,0.4);
+      border-radius: 8px; color: #93C5FD;
+      padding: 7px 11px;
+      font-family: 'Space Mono', monospace;
+      font-size: 10px; font-weight: 700;
+      cursor: pointer; white-space: nowrap;
+      touch-action: manipulation;
+    }
+
+    /* ─── FOOTER ─── */
+    .footer {
+      font-size: 9px; color: var(--dim);
+      text-align: center; padding: 20px 0 8px;
+      letter-spacing: 0.08em;
+    }
+
+    /* ─── ANIMATIONS ─── */
+    .spin { animation: spin 0.85s linear infinite; display: inline-block; }
+    @keyframes spin     { from{transform:rotate(0deg)}  to{transform:rotate(360deg)} }
+    @keyframes fadeUp   { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes shimmer  { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+  </style>
+</head>
+<body>
+
+<!-- ══════════ HEADER ══════════ -->
+<div class="header">
+  <div class="header-row">
+    <div>
+      <div class="logo">AI<b>.</b>Watch</div>
+      <div class="logo-sub">VEILLE NOUVEAUTÉS IA</div>
+    </div>
+    <button class="btn-refresh" id="btnRefresh" onclick="handleRefresh()">
+      <span id="refreshIcon">&#x27F3;</span>
+      <span id="refreshLabel">ACTUALISER</span>
+    </button>
+  </div>
+  <div class="tabs">
+    <button class="tab active" data-id="all"     onclick="switchTab('all')">&#9672;&#9678;&#9671; Tous</button>
+    <button class="tab"        data-id="claude"  onclick="switchTab('claude')">&#9672; Claude</button>
+    <button class="tab"        data-id="chatgpt" onclick="switchTab('chatgpt')">&#9678; ChatGPT</button>
+    <button class="tab"        data-id="gemini"  onclick="switchTab('gemini')">&#9671; Gemini</button>
+    <button class="tab"        data-id="links"   onclick="switchTab('links')">&#8599; Liens</button>
+  </div>
+</div>
+
+<!-- ══════════ CONTENU ══════════ -->
+<div class="content" id="content"></div>
+
+<script>
+/* ═══════════════════════════════════════════
+   CONFIGURATION
+═══════════════════════════════════════════ */
+const API_URL  = "https://api.anthropic.com/v1/messages";
+const API_MODEL = "claude-sonnet-4-6";   // modèle Sonnet 4.6
+const API_VER  = "2023-06-01";
+
+const SOURCES = [
+  {
+    id: "claude", name: "Claude / Anthropic", short: "Claude",
+    color: "#D97706", bg: "rgba(217,119,6,.12)", bd: "rgba(217,119,6,.4)", tx: "#FCD34D",
+    icon: "◈", url: "https://www.anthropic.com/news"
+  },
+  {
+    id: "chatgpt", name: "ChatGPT / OpenAI", short: "ChatGPT",
+    color: "#10B981", bg: "rgba(16,185,129,.12)", bd: "rgba(16,185,129,.4)", tx: "#6EE7B7",
+    icon: "◎", url: "https://openai.com/news"
+  },
+  {
+    id: "gemini", name: "Gemini Pro / Google", short: "Gemini",
+    color: "#3B82F6", bg: "rgba(59,130,246,.12)", bd: "rgba(59,130,246,.4)", tx: "#93C5FD",
+    icon: "◇", url: "https://blog.google/technology/ai/"
+  }
+];
+
+const EXT_LINKS = [
+  { label: "Anthropic News",    url: "https://www.anthropic.com/news" },
+  { label: "OpenAI Blog",       url: "https://openai.com/news" },
+  { label: "Google AI Blog",    url: "https://blog.google/technology/ai/" },
+  { label: "The Verge — AI",    url: "https://www.theverge.com/ai-artificial-intelligence" },
+  { label: "Google Alerts",     url: "https://www.google.com/alerts" },
+  { label: "Reddit r/ClaudeAI", url: "https://www.reddit.com/r/ClaudeAI/" },
+  { label: "Reddit r/ChatGPT",  url: "https://www.reddit.com/r/ChatGPT/" },
+  { label: "X @AnthropicAI",    url: "https://twitter.com/AnthropicAI" },
+  { label: "X @OpenAI",         url: "https://twitter.com/OpenAI" },
+];
+
+/* ═══════════════════════════════════════════
+   ÉTAT
+═══════════════════════════════════════════ */
+let news      = { claude: [], chatgpt: [], gemini: [] };
+let loading   = { claude: false, chatgpt: false, gemini: false };
+let errors    = { claude: null,  chatgpt: null,  gemini: null  };
+let tab       = "all";
+let lastRefresh   = null;
+let searched      = false;
+let deferredPrompt = null;
+
+/* ═══════════════════════════════════════════
+   CLEF API — stockée en localStorage
+═══════════════════════════════════════════ */
+function getKey()     { return localStorage.getItem("aiwatch_key") || ""; }
+function saveKey(k)   { localStorage.setItem("aiwatch_key", k.trim()); }
+function clearKey()   { localStorage.removeItem("aiwatch_key"); }
+
+function handleKeySave() {
+  const val = document.getElementById("apikeyInput").value.trim();
+  if (!val.startsWith("sk-ant-")) {
+    alert("La clef doit commencer par sk-ant-…\nVérifie sur console.anthropic.com");
+    return;
+  }
+  saveKey(val);
+  render();
+}
+
+/* ═══════════════════════════════════════════
+   PWA — Install prompt
+═══════════════════════════════════════════ */
+window.addEventListener("beforeinstallprompt", e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  const b = document.getElementById("installBanner");
+  if (b) b.classList.add("show");
+});
+
+function installPWA() {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.then(() => {
+    deferredPrompt = null;
+    const b = document.getElementById("installBanner");
+    if (b) b.classList.remove("show");
+  });
+}
+
+/* ═══════════════════════════════════════════
+   SERVICE WORKER (cache offline)
+═══════════════════════════════════════════ */
+if ("serviceWorker" in navigator) {
+  const swCode = `
+    const CACHE = "aiwatch-v2";
+    self.addEventListener("install", e => {
+      e.waitUntil(caches.open(CACHE).then(c => c.addAll(["./"])));
+      self.skipWaiting();
+    });
+    self.addEventListener("activate", e => {
+      e.waitUntil(caches.keys().then(keys =>
+        Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+      ));
+    });
+    self.addEventListener("fetch", e => {
+      if (e.request.url.includes("api.anthropic.com") ||
+          e.request.url.includes("fonts.google")) return;
+      e.respondWith(
+        caches.match(e.request).then(r => r || fetch(e.request).catch(() => caches.match("./")))
+      );
+    });
+  `;
+  const swBlob = new Blob([swCode], { type: "application/javascript" });
+  navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(() => {});
+}
+
+/* ═══════════════════════════════════════════
+   NAVIGATION TABS
+═══════════════════════════════════════════ */
+function switchTab(id) {
+  tab = id;
+  document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+  document.querySelector(`.tab[data-id="${id}"]`).classList.add("active");
+  render();
+}
+
+/* ═══════════════════════════════════════════
+   FETCH PRINCIPALE
+═══════════════════════════════════════════ */
+function anyLoading() { return Object.values(loading).some(Boolean); }
+
+async function handleRefresh() {
+  if (anyLoading()) return;
+  const key = getKey();
+  if (!key) { render(); return; }
+
+  searched = true;
+  news   = { claude: [], chatgpt: [], gemini: [] };
+  errors = { claude: null, chatgpt: null, gemini: null };
+
+  setBtnState(true);
+  render();
+
+  await Promise.all(SOURCES.map(s => fetchSource(s, key)));
+
+  lastRefresh = new Date();
+  setBtnState(false);
+  render();
+}
+
+function setBtnState(on) {
+  const btn = document.getElementById("btnRefresh");
+  if (!btn) return;
+  btn.disabled = on;
+  document.getElementById("refreshIcon").className = on ? "spin" : "";
+  document.getElementById("refreshIcon").textContent = "⟳";
+  document.getElementById("refreshLabel").textContent = on ? "ANALYSE..." : "ACTUALISER";
+}
+
+async function fetchSource(src, apiKey) {
+  loading[src.id] = true;
+  render();
+
+  const today = new Date().toLocaleDateString("fr-FR", {
+    year: "numeric", month: "long", day: "numeric"
+  });
+
+  const prompt =
+    `Tu es un assistant de veille technologique. Aujourd'hui : ${today}.\n` +
+    `Recherche et liste les 4 dernières nouveautés / fonctionnalités majeures de ${src.name} ` +
+    `(sorties en 2025, les plus récentes possible).\n\n` +
+    `Réponds UNIQUEMENT avec des blocs séparés par --- dans ce format exact :\n` +
+    `TITRE: [titre court et clair]\n` +
+    `RÉSUMÉ: [1 à 2 phrases explicatives]\n` +
+    `URL: [lien officiel réel vers l'annonce ou l'article]\n` +
+    `DATE: [date de la nouveauté]\n` +
+    `---\n\n` +
+    `Pas d'introduction, pas de conclusion. Uniquement les 4 blocs.`;
+
+  try {
+    const resp = await fetch(API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type":      "application/json",
+        "x-api-key":         apiKey,
+        "anthropic-version": API_VER,
+        "anthropic-dangerous-direct-browser-access": "true"
+      },
+      body: JSON.stringify({
+        model:     API_MODEL,
+        max_tokens: 1200,
+        tools: [{ type: "web_search_20250305", name: "web_search" }],
+        messages: [{ role: "user", content: prompt }]
+      })
+    });
+
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      const msg = err?.error?.message || `Erreur HTTP ${resp.status}`;
+      // Clef invalide → on la supprime
+      if (resp.status === 401) {
+        clearKey();
+        errors[src.id] = "Clef API invalide ou expirée. Saisis-la à nouveau.";
+      } else {
+        errors[src.id] = msg;
+      }
+      loading[src.id] = false;
+      render();
+      return;
+    }
+
+    const data = await resp.json();
+    const text = (data.content || [])
+      .filter(b => b.type === "text")
+      .map(b => b.text)
+      .join("\n");
+
+    const items = [];
+    for (const block of text.split("---").filter(b => b.trim())) {
+      const t = block.match(/TITRE\s*:\s*(.+)/i);
+      const r = block.match(/RÉSUMÉ\s*:\s*(.+)/i);
+      const u = block.match(/URL\s*:\s*(https?:\/\/[^\s\n]+)/i);
+      const d = block.match(/DATE\s*:\s*(.+)/i);
+      if (t) items.push({
+        title:   t[1].trim().replace(/\*\*/g, ""),
+        summary: r ? r[1].trim() : "",
+        url:     u ? u[1].trim() : src.url,
+        date:    d ? d[1].trim() : ""
+      });
+    }
+    news[src.id] = items.slice(0, 4);
+
+  } catch (e) {
+    errors[src.id] = "Erreur réseau. Vérifie ta connexion.";
+  }
+
+  loading[src.id] = false;
+  render();
+}
+
+/* ═══════════════════════════════════════════
+   RENDU
+═══════════════════════════════════════════ */
+function render() {
+  const el = document.getElementById("content");
+  if (!el) return;
+
+  const key = getKey();
+  let html = "";
+
+  /* Bannière installation PWA */
+  html += `<div class="install-banner" id="installBanner"${deferredPrompt ? ' style="display:flex"' : ""}>
+    <div class="install-text">📲 Installer AI.Watch sur l'écran d'accueil ?</div>
+    <button class="btn-install" onclick="installPWA()">INSTALLER</button>
+  </div>`;
+
+  /* Pas de clef → formulaire */
+  if (!key) {
+    html += renderApiKeyForm();
+    el.innerHTML = html;
+    return;
+  }
+
+  /* Clef présente → affichage veille */
+  if (!searched) {
+    html += `<div class="empty-state">
+      <div class="empty-icons">◈ ◎ ◇</div>
+      <div class="empty-title">Prêt à surveiller les IA</div>
+      <div class="empty-sub">Appuie sur <b style="color:#93C5FD">ACTUALISER</b> pour voir<br>les dernières nouveautés</div>
+    </div>`;
+    el.innerHTML = html;
+    return;
+  }
+
+  /* Barre de statut si chargement */
+  if (anyLoading()) {
+    const names = SOURCES.filter(s => loading[s.id]).map(s => s.short).join(", ");
+    html += `<div class="status-bar"><span class="spin">◌</span> Analyse en cours : ${names}…</div>`;
+  }
+
+  /* Changer de clef */
+  html += `<div style="text-align:right;margin-bottom:12px">
+    <button class="apikey-change" onclick="clearKey();searched=false;render()">⚙ Changer la clef API</button>
+  </div>`;
+
+  if (tab === "links") html += renderLinksTab();
+  else if (tab === "all") html += renderAllTab();
+  else {
+    const s = SOURCES.find(s => s.id === tab);
+    html += renderSourceTab(s);
+  }
+
+  if (lastRefresh) {
+    html += `<div class="footer">Dernière MAJ : ${lastRefresh.toLocaleTimeString("fr-FR")} · AI.Watch v2</div>`;
+  }
+
+  el.innerHTML = html;
+
+  /* Remettre la bannière si dispo */
+  if (deferredPrompt) {
+    const b = document.getElementById("installBanner");
+    if (b) b.style.display = "flex";
+  }
+}
+
+/* ── Formulaire clef API ── */
+function renderApiKeyForm() {
+  return `<div class="apikey-box">
+    <div class="apikey-title">🔑 Clef API Anthropic requise</div>
+    <div class="apikey-desc">
+      AI.Watch interroge Claude en direct pour récupérer les dernières nouveautés.
+      Ta clef est stockée uniquement sur ton téléphone (localStorage).<br><br>
+      Elle commence par <b style="color:#93C5FD">sk-ant-api03-…</b>
+    </div>
+    <input
+      class="apikey-input"
+      id="apikeyInput"
+      type="password"
+      placeholder="sk-ant-api03-…"
+      autocomplete="off"
+      spellcheck="false"
+    />
+    <button class="apikey-save" onclick="handleKeySave()">✓ ENREGISTRER ET CONTINUER</button>
+    <a class="apikey-link" href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">
+      ↗ Obtenir une clef sur console.anthropic.com
+    </a>
+  </div>
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;font-size:10px;color:var(--muted);line-height:1.7">
+    <b style="color:#F1F5F9;font-family:'Syne',sans-serif">Sécurité</b><br>
+    Ta clef n'est jamais envoyée à un serveur tiers. Elle est stockée localement
+    sur ton appareil et utilisée uniquement pour appeler l'API Anthropic directement.
+  </div>`;
+}
+
+/* ── Onglet Tous ── */
+function renderAllTab() {
+  return SOURCES.map(s => `
+    <div style="margin-bottom:22px">
+      ${srcHeader(s)}
+      ${loading[s.id]  ? skeletons(2)
+      : errors[s.id]   ? errorBar(errors[s.id])
+      : news[s.id].length === 0
+        ? `<div style="font-size:11px;color:var(--dim);text-align:center;padding:10px 0">Aucun résultat</div>`
+        : news[s.id].slice(0, 2).map(a => card(a, s)).join("")}
+    </div>`).join("");
+}
+
+/* ── Onglet source unique ── */
+function renderSourceTab(s) {
+  return srcHeader(s)
+    + (loading[s.id]  ? skeletons(4)
+    :  errors[s.id]   ? errorBar(errors[s.id])
+    :  news[s.id].length === 0
+      ? `<div style="font-size:12px;color:var(--dim);text-align:center;padding:30px 0">Aucun résultat</div>`
+      : news[s.id].map(a => card(a, s)).join(""));
+}
+
+/* ── En-tête source ── */
+function srcHeader(s) {
+  return `<div class="src-header">
+    <div class="src-icon" style="background:${s.bg};border:1.5px solid ${s.bd};color:${s.color}">${s.icon}</div>
+    <div>
+      <div class="src-name" style="color:${s.tx}">${s.name}</div>
+      <a href="${s.url}" target="_blank" rel="noopener" class="src-link">↗ Blog officiel</a>
+    </div>
+  </div>`;
+}
+
+/* ── Carte article ── */
+function card(a, s) {
+  const safe = (str) => str.replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  return `<a href="${a.url || s.url}" target="_blank" rel="noopener" class="card">
+    <div class="card-title">${safe(a.title)}</div>
+    <div class="card-meta">
+      <span>${safe(a.date)}</span>
+      <span style="color:var(--dim)">·</span>
+      <span style="color:${s.color}">${s.short}</span>
+    </div>
+    ${a.summary ? `<div class="card-summary">${safe(a.summary)}</div>` : ""}
+    <div class="card-arrow">↗ Voir l'article</div>
+  </a>`;
+}
+
+/* ── Skeletons de chargement ── */
+function skeletons(n) {
+  return Array.from({length: n}, (_, i) =>
+    `<div class="skel" style="height:82px;animation-delay:${i * 0.15}s"></div>`
+  ).join("");
+}
+
+/* ── Barre d'erreur ── */
+function errorBar(msg) {
+  return `<div class="error-bar">⚠ ${msg}</div>`;
+}
+
+/* ── Onglet Liens ── */
+function renderLinksTab() {
+  const alerts = [
+    '"Claude Anthropic" nouveautés',
+    '"ChatGPT" nouvelles fonctionnalités',
+    '"Gemini Pro" mise à jour',
+  ];
+  return `
+    <div class="section-label">SOURCES OFFICIELLES</div>
+    ${EXT_LINKS.map(l => `
+      <a href="${l.url}" target="_blank" rel="noopener" class="link-card">
+        <span class="link-card-label">${l.label}</span>
+        <span class="link-card-arrow">↗</span>
+      </a>`).join("")}
+    <div style="height:16px"></div>
+    <div class="section-label">GOOGLE ALERTS RECOMMANDÉS</div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px">
+      ${alerts.map(q => `
+        <a href="https://www.google.com/alerts#1:${encodeURIComponent(q)}"
+          target="_blank" rel="noopener"
+          style="display:flex;justify-content:space-between;align-items:center;
+                 font-size:11px;color:#3B82F6;padding:9px 0;
+                 border-bottom:1px solid var(--border);text-decoration:none">
+          <span>🔔 ${q}</span><span style="color:var(--dim)">↗</span>
+        </a>`).join("")}
+    </div>`;
+}
+
+/* ═══════════════════════════════════════════
+   DÉMARRAGE
+═══════════════════════════════════════════ */
+render();
+</script>
+</body>
+</html>
