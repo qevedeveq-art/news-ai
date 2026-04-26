@@ -5,6 +5,7 @@ on:
     paths:
       - "newsletters/*.md"
   schedule:
+    - cron: "0 6 * * *"
     - cron: "0 7 * * *"
   workflow_dispatch:
 
@@ -30,5 +31,8 @@ jobs:
             latest_file="$(ls newsletters/*.md | sort | tail -n 1)"
             python3 scripts/send_newsletter.py --input-file "$latest_file"
           else
-            python3 scripts/send_newsletter.py --lookback-hours 96
+            python3 scripts/send_newsletter.py \
+              --lookback-hours 96 \
+              --schedule-timezone Europe/Berlin \
+              --require-local-hour 8
           fi

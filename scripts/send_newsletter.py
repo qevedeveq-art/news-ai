@@ -16,6 +16,7 @@ from email.utils import parsedate_to_datetime
 from html.parser import HTMLParser
 from html import unescape
 from typing import Any
+from zoneinfo import ZoneInfo
 
 
 USER_AGENT = "news-ai-slack-bot/1.0"
@@ -396,11 +397,32 @@ def parse_args() -> argparse.Namespace:
         "--input-file",
         help="Send the exact contents of a local newsletter file instead of generating one from feeds.",
     )
+    parser.add_argument(
+        "--schedule-timezone",
+        default="",
+        help="IANA timezone used to enforce a local delivery hour, for example Europe/Paris.",
+    )
+    parser.add_argument(
+        "--require-local-hour",
+        type=int,
+        default=None,
+        help="If set, only continue when the current hour in schedule-timezone matches this value.",
+    )
     return parser.parse_args()
 
 
 def main() -> int:
     args = parse_args()
+    if args.require_local_hour is not None:
+        timezone_name = args.schedule_timezone or "UTC"
+        now_local = dt.datetime.now(ZoneInfo(timezone_name))
+        if now_local.hour != args.require_local_hour:
+            print(
+                f"Skipping send because local time in {timezone_name} is "
+                f"{now_local.strftime('%H:%M')} and not {args.require_local_hour:02d}:00."
+            )
+            return 0
+
     if args.input_file:
         with open(args.input_file, "r", encoding="utf-8") as handle:
             newsletter = handle.read().strip()
