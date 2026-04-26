@@ -1,6 +1,9 @@
 name: Send AI Newsletter To Slack
 
 on:
+  push:
+    paths:
+      - "newsletters/*.md"
   schedule:
     - cron: "0 7 * * *"
   workflow_dispatch:
@@ -22,4 +25,10 @@ jobs:
       - name: Send newsletter to Slack
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-        run: python3 scripts/send_newsletter.py --lookback-hours 96
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            latest_file="$(ls newsletters/*.md | sort | tail -n 1)"
+            python3 scripts/send_newsletter.py --input-file "$latest_file"
+          else
+            python3 scripts/send_newsletter.py --lookback-hours 96
+          fi

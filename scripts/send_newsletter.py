@@ -392,32 +392,43 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Do not post to Slack, even if a webhook is configured.",
     )
+    parser.add_argument(
+        "--input-file",
+        help="Send the exact contents of a local newsletter file instead of generating one from feeds.",
+    )
     return parser.parse_args()
 
 
 def main() -> int:
     args = parse_args()
-    cutoff = dt.datetime.now(dt.timezone.utc) - dt.timedelta(hours=args.lookback_hours)
+    if args.input_file:
+        with open(args.input_file, "r", encoding="utf-8") as handle:
+            newsletter = handle.read().strip()
+        if not newsletter:
+            print(f"Newsletter file is empty: {args.input_file}", file=sys.stderr)
+            return 1
+    else:
+        cutoff = dt.datetime.now(dt.timezone.utc) - dt.timedelta(hours=args.lookback_hours)
 
-    items_by_source: list[tuple[dict[str, Any], list[dict[str, Any]]]] = []
-    failures: list[str] = []
-    for source in SOURCES:
-        try:
-            items = get_source_items(source, cutoff)
-        except Exception as exc:
-            failures.append(f"{source['name']}: {exc}")
-            items = []
-        items_by_source.append((source, items))
+        items_by_source: list[tuple[dict[str, Any], list[dict[str, Any]]]] = []
+        failures: list[str] = []
+        for source in SOURCES:
+            try:
+                items = get_source_items(source, cutoff)
+            except Exception as exc:
+                failures.append(f"{source['name']}: {exc}")
+                items = []
+            items_by_source.append((source, items))
 
-    if failures:
-        for failure in failures:
-            print(f"warning: {failure}", file=sys.stderr)
+        if failures:
+            for failure in failures:
+                print(f"warning: {failure}", file=sys.stderr)
 
-    if not any(items for _, items in items_by_source):
-        print("No recent news items found across configured sources. Skipping Slack post.")
-        return 0
+        if not any(items for _, items in items_by_source):
+            print("No recent news items found across configured sources. Skipping Slack post.")
+            return 0
 
-    newsletter = build_newsletter(items_by_source)
+        newsletter = build_newsletter(items_by_source)
     if args.stdout or args.dry_run:
         print(newsletter)
 
